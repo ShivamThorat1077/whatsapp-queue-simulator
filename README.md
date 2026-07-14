@@ -24,4 +24,9 @@ real rate-limiter bug found and fixed while testing this.
 - `rate_limiter.py` — adaptive token-bucket rate limiter (client-side backpressure)
 - `server.py` — mock downstream API with a real, deterministic rate limit
 - `DESIGN.md` — design rationale and tradeoffs
-# whatsapp-queue-simulator
+
+## AI tools disclosure
+I used Claude (Anthropic, Sonnet model) as a coding assistant throughout this project.
+
+- Initial implementation: the first draft of `client.py`, `server.py`, and `rate_limiter.py` was scaffolded with Claude based on my direction on the architecture (priority queue + worker pool + semaphore + adaptive rate limiter). I reviewed and understood the design before treating it as a starting point.
+- Debugging: I ran the simulator myself, repeatedly, on my own machine. When a real bug showed up (the rate limiter collapsing to near-zero under a burst of simultaneous 429s), I worked with Claude to diagnose the cause and fix it, then re-ran it multiple times to confirm the fix held.

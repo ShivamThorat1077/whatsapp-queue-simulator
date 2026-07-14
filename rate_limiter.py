@@ -26,8 +26,8 @@ class AdaptiveRateLimiter:
         self._throttle_cooldown = 0.5
 
     async def acquire(self):
-        async with self._lock:
-            while True:
+        while True:
+            async with self._lock:
                 now = time.monotonic()
                 elapsed = now - self.last_refill
                 self.last_refill = now
@@ -38,7 +38,10 @@ class AdaptiveRateLimiter:
                     return
 
                 wait = (1 - self.tokens) / self.rate
-                await asyncio.sleep(wait)
+
+            # Sleep OUTSIDE the lock so other workers aren't blocked from
+            # acquiring tokens that may already be available.
+            await asyncio.sleep(wait)
 
     def throttle(self, factor: float = 0.5):
         """
