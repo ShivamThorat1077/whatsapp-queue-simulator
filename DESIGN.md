@@ -140,6 +140,20 @@ I'm noting this because it's the kind of thing that only shows up when you
 actually run the concurrency model under real timing, rather than reading
 the code and convincing yourself it's correct.
 
+## Not every failure should be retried
+
+429, 500, and 503 all mean "try again later" — but a 400 can mean two very
+different things. Meta's real Graph API sometimes returns a 400 whose body
+contains a rate-limit error code (130429, 80007, 4) — a rate limit wearing
+a 400's clothes — which should be retried like a 429. Other 400s mean the
+request itself was invalid, and retrying it would just fail the same way
+forever. `client.py` checks the error code inside the 400 body to tell these
+apart; `server.py` generates both kinds (rarely) so this logic is actually
+exercised rather than sitting as dead code. This is also why
+`dead_lettered` is no longer always 0 in a normal run — a handful of
+genuinely permanent failures are expected and correctly *not* retried,
+which is the point being demonstrated.
+
 ## Retry budget: billing gets more attempts than announcements
 
 Priority determines queue order, but on its own that only protects a message
