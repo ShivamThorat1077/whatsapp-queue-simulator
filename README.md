@@ -48,8 +48,4 @@ I used Claude (Anthropic) as a coding assistant throughout this project.
   burst, all 520 messages delivered in ~35s with zero dead-lettered across
   repeated runs.
 
-* **Scope:** I deliberately left out an extra load-testing scenario Claude
-  had proposed (a 5x-overload stress test with a naive fire-and-forget
-  baseline) — it wasn't part of the original ask, and I wanted the
-  submission focused on the stated requirements.
 
