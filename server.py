@@ -21,7 +21,15 @@ deterministic rather than a coin flip:
 SERVER_RATE = 15.0     # sustained requests/sec this "account" is allowed
 SERVER_BURST = 15.0    # burst allowance on top of the sustained rate
 RANDOM_500_RATE = 0.02
+RANDOM_503_RATE = 0.01        # infra at capacity - client should retry like a 429
+RANDOM_400_THROTTLE_RATE = 0.01   # Meta-style rate-limit-wearing-a-400's-clothes
+RANDOM_400_PERMANENT_RATE = 0.005  # genuine bad request - should NOT be retried
 LATENCY_RANGE = (0.03, 0.12)
+
+# Real WhatsApp Graph API error codes that mean "you're actually rate limited"
+# even though the HTTP status is 400, not 429.
+THROTTLE_400_CODES = (130429, 80007, 4)
+PERMANENT_400_CODE = 100  # "Invalid parameter" - a real error, not a rate limit
 
 
 class TokenBucket:
@@ -61,6 +69,18 @@ async def handle_send(request):
 
     if random.random() < RANDOM_500_RATE:
         return web.json_response({"error": "server_error"}, status=500)
+
+    if random.random() < RANDOM_503_RATE:
+        return web.json_response({"error": "capacity"}, status=503)
+
+    if random.random() < RANDOM_400_THROTTLE_RATE:
+        code = random.choice(THROTTLE_400_CODES)
+        return web.json_response({"error": {"code": code, "message": "rate limited"}}, status=400)
+
+    if random.random() < RANDOM_400_PERMANENT_RATE:
+        return web.json_response(
+            {"error": {"code": PERMANENT_400_CODE, "message": "Invalid parameter"}}, status=400
+        )
 
     return web.json_response({"status": "delivered", "ts": time.time()})
 
