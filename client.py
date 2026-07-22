@@ -100,7 +100,7 @@ async def deliver(session, sem, limiter, msg, queue, stats):
                         await _retry(msg, queue, stats, reason=f"400/{code}-throughput", delay=None)
                     else:
                         stats["dead_lettered"] += 1
-                        stats["permanent_failure"] = stats.get("permanent_failure", 0) + 1
+                        stats["permanent_failure"] += 1
                         log.error(f"PERM  id={msg.id:<6} {label:<8} code={code} — permanent, not retrying")
                     return
 
