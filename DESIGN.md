@@ -140,6 +140,27 @@ I'm noting this because it's the kind of thing that only shows up when you
 actually run the concurrency model under real timing, rather than reading
 the code and convincing yourself it's correct.
 
+## `dead_lettered` vs. `permanent_failure`: not the same number
+
+These two counters answer different questions, and they will not always
+match. `permanent_failure` counts messages that got a definitive "do not
+retry this" signal (a 400 whose error code isn't a throttle code — the
+request itself was invalid). `dead_lettered` counts every message that
+ends up permanently undelivered, for *either* reason: a permanent failure,
+or a message that exhausted its retry budget on an ordinary retryable
+error (429, 500, 503) purely from bad timing.
+
+This showed up in an actual run: `delivered=518 retried=141
+dead_lettered=2 permanent_failure=1`. One message was dead-lettered for a
+genuine permanent reason (code 100). The other — message `306` — was
+dead-lettered after exhausting all 5 attempts on nothing but ordinary
+`429-burst` responses; it just kept getting unlucky with timing until its
+budget ran out. Both are correctly dead-lettered, but for different
+reasons, and only one of them is a "permanent failure" in the strict
+sense. The invariant is `dead_lettered >= permanent_failure`, not
+equality — the `reason=` field on each `DEAD` log line is what tells you
+which case actually happened for any given message.
+
 ## Not every failure should be retried
 
 429, 500, and 503 all mean "try again later" — but a 400 can mean two very
